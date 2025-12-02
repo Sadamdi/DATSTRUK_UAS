@@ -3,6 +3,8 @@ import java.awt.Color;
 /**
  * Konstanta untuk aplikasi Sudoku Solver
  * Berisi semua nilai tetap seperti ukuran, warna, dll
+ * 
+ * Warna mengikuti ThemeManager (light/dark).
  */
 public class SudokuConstants {
     
@@ -11,33 +13,57 @@ public class SudokuConstants {
     public static final int SUBGRID_SIZE = 3;    // Ukuran subgrid 3x3
     public static final int CELL_SIZE = 60;      // Ukuran pixel per sel
     
-    // Warna untuk sel
-    public static final Color COLOR_BACKGROUND = new Color(250, 250, 252);
-    public static final Color COLOR_CELL_DEFAULT = Color.WHITE;
-    public static final Color COLOR_CELL_INITIAL = new Color(240, 240, 245);
-    public static final Color COLOR_CELL_SOLVED = new Color(232, 245, 233);
-    public static final Color COLOR_CELL_PROCESSING = new Color(255, 235, 59); // Kuning
-    public static final Color COLOR_CELL_TESTING = new Color(255, 183, 77); // Orange
-    public static final Color COLOR_CELL_BACKTRACK = new Color(255, 138, 128); // Merah muda untuk backtrack
+    // Warna untuk sel (akan disinkronkan dari ThemeManager)
+    public static Color COLOR_BACKGROUND;
+    public static Color COLOR_CELL_DEFAULT;
+    public static Color COLOR_CELL_INITIAL;
+    public static Color COLOR_CELL_SOLVED;
+    public static Color COLOR_CELL_PROCESSING;
+    public static Color COLOR_CELL_TESTING;
+    public static Color COLOR_CELL_BACKTRACK;
     
     // Warna untuk teks
-    public static final Color COLOR_TEXT_INITIAL = new Color(33, 37, 41);
-    public static final Color COLOR_TEXT_SOLVED = new Color(46, 125, 50);
+    public static Color COLOR_TEXT_INITIAL;
+    public static Color COLOR_TEXT_SOLVED;
     
     // Warna untuk border
-    public static final Color COLOR_BORDER_THICK = new Color(33, 37, 41);
-    public static final Color COLOR_BORDER_THIN = new Color(200, 200, 200);
+    public static Color COLOR_BORDER_THICK;
+    public static Color COLOR_BORDER_THIN;
     
-    // Warna untuk tombol
-    public static final Color COLOR_BUTTON_SOLVE = new Color(76, 175, 80);
-    public static final Color COLOR_BUTTON_RESET = new Color(244, 67, 54);
-    public static final Color COLOR_BUTTON_LOAD = new Color(33, 150, 243);
+    // Warna untuk tombol (langsung ambil dari ThemeManager, sama untuk kedua mode)
+    public static final Color COLOR_BUTTON_SOLVE = ThemeManager.BTN_SOLVE;
+    public static final Color COLOR_BUTTON_RESET = ThemeManager.BTN_RESET;
+    public static final Color COLOR_BUTTON_LOAD = ThemeManager.BTN_LOAD;
     
     // Delay animasi (dalam milliseconds)
     public static final int ANIMATION_DELAY_SLOW = 200;
     public static final int ANIMATION_DELAY_MEDIUM = 50;
     public static final int ANIMATION_DELAY_FAST = 10;
     public static final int ANIMATION_DELAY_ULTRA_FAST = 1;
-    public static final int ANIMATION_DELAY_SUPER_ULTRA_FAST = 0; // Tanpa delay
+    // Mode baru: SUPER ULTRA -> delay tetap 1ms tapi visual bisa di-throttle (misal setiap 10 langkah)
+    public static final int ANIMATION_DELAY_SUPER_ULTRA_FAST = 1;
+    
+    static {
+        refreshFromTheme();
+    }
+    
+    /**
+     * Sinkronkan warna dengan ThemeManager (dipanggil saat mode light/dark berubah)
+     */
+    public static void refreshFromTheme() {
+        COLOR_BACKGROUND = ThemeManager.getBackground();
+        COLOR_CELL_DEFAULT = ThemeManager.getCell();
+        COLOR_CELL_INITIAL = ThemeManager.getCellInitial();
+        COLOR_CELL_SOLVED = ThemeManager.getCellSolved();
+        COLOR_CELL_PROCESSING = ThemeManager.getCellProcessing();
+        COLOR_CELL_TESTING = ThemeManager.getCellTesting();
+        COLOR_CELL_BACKTRACK = ThemeManager.getCellBacktrack();
+        
+        COLOR_TEXT_INITIAL = ThemeManager.getText();
+        COLOR_TEXT_SOLVED = ThemeManager.getTextSolved();
+        
+        COLOR_BORDER_THICK = ThemeManager.getBorder();
+        COLOR_BORDER_THIN = ThemeManager.getBorderThin();
+    }
 }
 

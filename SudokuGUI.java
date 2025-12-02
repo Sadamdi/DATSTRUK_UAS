@@ -1,9 +1,29 @@
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.text.*;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 /**
  * Kelas untuk komponen GUI Sudoku Solver
@@ -17,7 +37,20 @@ public class SudokuGUI {
     private JButton speedButton;
     private JButton skipButton;
     private int animationDelay = SudokuConstants.ANIMATION_DELAY_MEDIUM;
+    // Flag lokal hanya untuk mencegah double-klik saat skip dipicu
     private boolean skipAnimation = false;
+    
+    // Reset flag skip animation (dipanggil saat proses baru dimulai)
+    public void resetSkipAnimation() {
+        skipAnimation = false;
+        if (skipButton != null) {
+            skipButton.setEnabled(true);
+            skipButton.setText("⚡ Skip Animasi");
+            skipButton.setBackground(ThemeManager.BTN_SKIP);
+        }
+    }
+    // Untuk mode kecepatan tertinggi: update visual bisa di-throttle (mis. setiap 10 langkah)
+    private boolean throttleVisualUpdates = false;
     
     // Callback untuk interaksi
     public interface GUIActionListener {
@@ -174,16 +207,24 @@ public class SudokuGUI {
                 animationDelay = SudokuConstants.ANIMATION_DELAY_FAST;
             } else if (animationDelay == SudokuConstants.ANIMATION_DELAY_FAST) {
                 animationDelay = SudokuConstants.ANIMATION_DELAY_ULTRA_FAST;
-            } else if (animationDelay == SudokuConstants.ANIMATION_DELAY_ULTRA_FAST) {
+            } else if (animationDelay == SudokuConstants.ANIMATION_DELAY_ULTRA_FAST && !throttleVisualUpdates) {
+                // Pindah ke mode SUPER ULTRA: delay sama (1ms) tapi visual di-throttle
                 animationDelay = SudokuConstants.ANIMATION_DELAY_SUPER_ULTRA_FAST;
+                throttleVisualUpdates = true;
             } else {
+                // Kembali ke mode LAMBAT dan matikan throttle visual
                 animationDelay = SudokuConstants.ANIMATION_DELAY_SLOW;
+                throttleVisualUpdates = false;
+            }
+            // Jika saat ini bukan mode SUPER ULTRA, pastikan throttle mati
+            if (animationDelay != SudokuConstants.ANIMATION_DELAY_SUPER_ULTRA_FAST) {
+                throttleVisualUpdates = false;
             }
             speedButton.setText("⚡ " + getSpeedLabel());
             if (actionListener != null) actionListener.onSpeedChange(animationDelay);
         });
         
-        // Tombol Skip Animation (Mode Cepat)
+        // Tombol Skip Animation (Mode Cepat - sekali klik untuk auto-skip animasi saat proses berjalan)
         skipButton = new JButton("⚡ Skip Animasi");
         skipButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
         skipButton.setBackground(new Color(255, 152, 0)); // Orange
@@ -193,17 +234,13 @@ public class SudokuGUI {
         skipButton.setPreferredSize(new Dimension(130, 30));
         skipButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         skipButton.addActionListener(e -> {
-            skipAnimation = !skipAnimation;
-            if (skipAnimation) {
-                skipButton.setText("✓ Mode Cepat");
-                skipButton.setBackground(new Color(76, 175, 80)); // Hijau
-                skipButton.setToolTipText("Mode cepat aktif - tidak ada animasi");
-            } else {
-                skipButton.setText("⚡ Skip Animasi");
-                skipButton.setBackground(new Color(255, 152, 0)); // Orange
-                skipButton.setToolTipText("Klik untuk mode cepat (tanpa animasi)");
-            }
-            if (actionListener != null) actionListener.onToggleAnimation(skipAnimation);
+            // Sekali klik: kirim sinyal ke solver untuk langsung skip animasi.
+            // Tombol dinonaktifkan sampai proses selesai / di-reset.
+            if (skipAnimation) return; // sudah pernah dipicu
+            skipAnimation = true;
+            skipButton.setEnabled(false);
+            skipButton.setText("⏩ Skipping...");
+            if (actionListener != null) actionListener.onToggleAnimation(true);
         });
         
         speedPanel.add(speedLabel);
@@ -221,8 +258,8 @@ public class SudokuGUI {
         if (animationDelay == SudokuConstants.ANIMATION_DELAY_SLOW) return "Lambat";
         if (animationDelay == SudokuConstants.ANIMATION_DELAY_MEDIUM) return "Sedang";
         if (animationDelay == SudokuConstants.ANIMATION_DELAY_FAST) return "Cepat";
-        if (animationDelay == SudokuConstants.ANIMATION_DELAY_ULTRA_FAST) return "Ultra Fast";
-        if (animationDelay == SudokuConstants.ANIMATION_DELAY_SUPER_ULTRA_FAST) return "Super Ultra";
+        if (animationDelay == SudokuConstants.ANIMATION_DELAY_ULTRA_FAST && !throttleVisualUpdates) return "Ultra Fast";
+        if (animationDelay == SudokuConstants.ANIMATION_DELAY_SUPER_ULTRA_FAST && throttleVisualUpdates) return "Super Ultra Fast";
         return "Custom";
     }
     
@@ -299,6 +336,10 @@ public class SudokuGUI {
     
     public void setAnimationDelay(int delay) {
         this.animationDelay = delay;
+    }
+    
+    public boolean isThrottleVisualUpdates() {
+        return throttleVisualUpdates;
     }
     
     /**

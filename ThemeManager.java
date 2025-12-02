@@ -54,10 +54,12 @@ public class ThemeManager {
     
     public static void setDarkMode(boolean dark) {
         darkMode = dark;
+        SudokuConstants.refreshFromTheme();
     }
     
     public static void toggleDarkMode() {
         darkMode = !darkMode;
+        SudokuConstants.refreshFromTheme();
     }
     
     // Getter methods untuk warna berdasarkan mode

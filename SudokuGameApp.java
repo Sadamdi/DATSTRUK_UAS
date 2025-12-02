@@ -332,50 +332,37 @@ public class SudokuGameApp extends JFrame {
     }
     
     private void generatePuzzle() {
-        // Generate solusi lengkap dulu
-        int[][] fullBoard = new int[SudokuConstants.GRID_SIZE][SudokuConstants.GRID_SIZE];
-        SudokuSolver solver = new SudokuSolver(fullBoard);
-        boolean solved = solver.solve(); // Generate solusi
-        
-        if (!solved) {
-            // Fallback: gunakan puzzle contoh yang sudah terpecahkan
-            int[][] example = {
-                {5, 3, 4, 6, 7, 8, 9, 1, 2},
-                {6, 7, 2, 1, 9, 5, 3, 4, 8},
-                {1, 9, 8, 3, 4, 2, 5, 6, 7},
-                {8, 5, 9, 7, 6, 1, 4, 2, 3},
-                {4, 2, 6, 8, 5, 3, 7, 9, 1},
-                {7, 1, 3, 9, 2, 4, 8, 5, 6},
-                {9, 6, 1, 5, 3, 7, 2, 8, 4},
-                {2, 8, 7, 4, 1, 9, 6, 3, 5},
-                {3, 4, 5, 2, 8, 6, 1, 7, 9}
-            };
-            for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
-                System.arraycopy(example[i], 0, fullBoard[i], 0, SudokuConstants.GRID_SIZE);
-            }
-        }
-        
-        // Copy solusi lengkap
-        for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
-            System.arraycopy(fullBoard[i], 0, solution[i], 0, SudokuConstants.GRID_SIZE);
-            System.arraycopy(fullBoard[i], 0, playerBoard[i], 0, SudokuConstants.GRID_SIZE);
-        }
-        
-        // Hapus beberapa angka secara random (buat puzzle)
-        // Hapus sekitar 40-50 sel untuk membuat puzzle menengah
+        // Generate puzzle random menggunakan PuzzleGenerator (lebih random dan valid)
         Random rand = new Random();
         int cellsToRemove = 40 + rand.nextInt(11); // 40-50 cells
-        int removed = 0;
-        boolean[][] removedCells = new boolean[SudokuConstants.GRID_SIZE][SudokuConstants.GRID_SIZE];
         
-        while (removed < cellsToRemove) {
-            int row = rand.nextInt(SudokuConstants.GRID_SIZE);
-            int col = rand.nextInt(SudokuConstants.GRID_SIZE);
-            if (!removedCells[row][col]) {
-                playerBoard[row][col] = 0;
-                removedCells[row][col] = true;
-                removed++;
+        // Generate puzzle dengan solusi lengkap
+        int[][] puzzle = PuzzleGenerator.generatePuzzle(cellsToRemove);
+        
+        // Generate solusi lengkap untuk puzzle ini
+        int[][] fullSolution = new int[SudokuConstants.GRID_SIZE][SudokuConstants.GRID_SIZE];
+        for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
+            System.arraycopy(puzzle[i], 0, fullSolution[i], 0, SudokuConstants.GRID_SIZE);
+        }
+        
+        // Solve untuk mendapatkan solusi lengkap
+        SudokuSolver solver = new SudokuSolver(fullSolution);
+        boolean solved = solver.solve();
+        
+        if (!solved) {
+            // Fallback: generate ulang jika tidak bisa diselesaikan
+            puzzle = PuzzleGenerator.generatePuzzle(cellsToRemove);
+            for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
+                System.arraycopy(puzzle[i], 0, fullSolution[i], 0, SudokuConstants.GRID_SIZE);
             }
+            SudokuSolver solver2 = new SudokuSolver(fullSolution);
+            solver2.solve();
+        }
+        
+        // Copy solusi lengkap dan puzzle awal
+        for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
+            System.arraycopy(fullSolution[i], 0, solution[i], 0, SudokuConstants.GRID_SIZE);
+            System.arraycopy(puzzle[i], 0, playerBoard[i], 0, SudokuConstants.GRID_SIZE);
         }
     }
     
@@ -425,20 +412,27 @@ public class SudokuGameApp extends JFrame {
         }
         
         // Validasi: cek apakah tidak bentrok (baris, kolom, subgrid)
-        // User bisa isi sel mana saja, tidak harus urut dari kiri atas ke kanan bawah
         playerBoard[newRow][newCol] = value;
         SudokuValidator validator = new SudokuValidator(playerBoard);
         
         // Validasi akan otomatis skip sel (newRow, newCol) saat mengecek
-        boolean isValid = validator.isValidPlacement(newRow, newCol, value);
+        boolean isValidLocal = validator.isValidPlacement(newRow, newCol, value);
         
-        if (!isValid) {
-            // Salah - highlight merah (bentrok dengan baris/kolom/subgrid)
+        // Cek apakah grid 3x3 yang sedang diisi tersisa ≤ 3 sel kosong
+        int subgridEmptyCount = countEmptyCellsInSubgrid(newRow, newCol);
+        boolean isValidSubgrid = true;
+        
+        if (subgridEmptyCount <= 3) {
+            // Jika grid tersebut tersisa ≤ 3 sel kosong, cek apakah grid tersebut masih bisa diselesaikan
+            isValidSubgrid = canSubgridBeSolved(newRow, newCol);
+        }
+        
+        if (!isValidLocal) {
+            // Salah karena bentrok lokal (baris/kolom/subgrid)
             highlightError(newRow, newCol, "Angka ini melanggar aturan Sudoku (bentrok dengan baris/kolom/subgrid)");
             playerBoard[newRow][newCol] = 0;
             cells[newRow][newCol].setText("");
             
-            // Bot akan benerin
             gui.addLog("❌ Player salah di [" + newRow + "," + newCol + "] = " + value + " (bentrok)\n");
             gui.addLog("Bot akan memperbaiki...\n");
             isPlayerTurn = false;
@@ -447,8 +441,21 @@ public class SudokuGameApp extends JFrame {
             return;
         }
         
-        // Tidak bentrok = BENAR! (tidak perlu cek apakah sesuai solusi)
-        // User bisa isi sel mana saja, selama tidak bentrok
+        if (!isValidSubgrid) {
+            // Salah karena membuat grid 3x3 tidak bisa diselesaikan (hanya dicek jika grid tersisa ≤ 3 sel)
+            highlightError(newRow, newCol, "Angka ini membuat grid 3x3 tidak bisa diselesaikan");
+            playerBoard[newRow][newCol] = 0;
+            cells[newRow][newCol].setText("");
+            
+            gui.addLog("❌ Player salah di [" + newRow + "," + newCol + "] = " + value + " (grid tidak valid)\n");
+            gui.addLog("Bot akan memperbaiki...\n");
+            isPlayerTurn = false;
+            submitButton.setEnabled(false);
+            botFixCell(newRow, newCol);
+            return;
+        }
+        
+        // Benar: tidak bentrok dan puzzle masih valid
         playerScore++;
         playerFilled[newRow][newCol] = true;
         cells[newRow][newCol].setEditable(false); // Disable sel yang sudah benar
@@ -510,6 +517,81 @@ public class SudokuGameApp extends JFrame {
                 }
             }
         }
+        return true;
+    }
+    
+    /**
+     * Hitung jumlah sel kosong yang tersisa di grid 3x3 tertentu
+     */
+    private int countEmptyCellsInSubgrid(int row, int col) {
+        int startRow = (row / SudokuConstants.SUBGRID_SIZE) * SudokuConstants.SUBGRID_SIZE;
+        int startCol = (col / SudokuConstants.SUBGRID_SIZE) * SudokuConstants.SUBGRID_SIZE;
+        
+        int count = 0;
+        for (int r = startRow; r < startRow + SudokuConstants.SUBGRID_SIZE; r++) {
+            for (int c = startCol; c < startCol + SudokuConstants.SUBGRID_SIZE; c++) {
+                if (playerBoard[r][c] == 0) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+    
+    /**
+     * Cek apakah grid 3x3 tertentu masih bisa diselesaikan
+     * (cek apakah semua angka 1-9 bisa ditempatkan di grid tersebut)
+     */
+    private boolean canSubgridBeSolved(int row, int col) {
+        int startRow = (row / SudokuConstants.SUBGRID_SIZE) * SudokuConstants.SUBGRID_SIZE;
+        int startCol = (col / SudokuConstants.SUBGRID_SIZE) * SudokuConstants.SUBGRID_SIZE;
+        
+        // Buat copy board untuk testing
+        int[][] testBoard = new int[SudokuConstants.GRID_SIZE][SudokuConstants.GRID_SIZE];
+        for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
+            System.arraycopy(playerBoard[i], 0, testBoard[i], 0, SudokuConstants.GRID_SIZE);
+        }
+        
+        // Cek apakah grid 3x3 ini masih bisa diisi dengan angka 1-9 tanpa bentrok
+        // Kita cek apakah setiap angka 1-9 masih bisa ditempatkan di grid tersebut
+        boolean[] usedNumbers = new boolean[10]; // 0-9, index 0 tidak dipakai
+        
+        // Hitung angka yang sudah ada di grid
+        for (int r = startRow; r < startRow + SudokuConstants.SUBGRID_SIZE; r++) {
+            for (int c = startCol; c < startCol + SudokuConstants.SUBGRID_SIZE; c++) {
+                if (testBoard[r][c] != 0) {
+                    usedNumbers[testBoard[r][c]] = true;
+                }
+            }
+        }
+        
+        // Cek apakah setiap angka yang belum digunakan masih bisa ditempatkan
+        SudokuValidator validator = new SudokuValidator(testBoard);
+        for (int num = 1; num <= 9; num++) {
+            if (!usedNumbers[num]) {
+                // Cari sel kosong di grid ini yang bisa ditempati angka ini
+                boolean canPlace = false;
+                for (int r = startRow; r < startRow + SudokuConstants.SUBGRID_SIZE; r++) {
+                    for (int c = startCol; c < startCol + SudokuConstants.SUBGRID_SIZE; c++) {
+                        if (testBoard[r][c] == 0) {
+                            // Cek apakah angka ini bisa ditempatkan di sel ini (cek baris dan kolom juga)
+                            if (validator.isValidPlacement(r, c, num)) {
+                                canPlace = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (canPlace) break;
+                }
+                
+                // Jika ada angka yang tidak bisa ditempatkan di grid ini, grid tidak valid
+                if (!canPlace) {
+                    return false;
+                }
+            }
+        }
+        
+        // Jika semua angka masih bisa ditempatkan, grid masih valid
         return true;
     }
     

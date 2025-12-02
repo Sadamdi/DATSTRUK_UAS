@@ -26,10 +26,20 @@ public class SudokuSolverApp extends JFrame {
     private boolean isSolving = false;
     private boolean skipAnimation = false;
     private SwingWorker<Boolean, Void> currentWorker; // Untuk stop proses
+    private SudokuSolver activeSolver; // Solver yang sedang berjalan (untuk referensi bila diperlukan)
     
     // Puzzle akan di-generate secara random
     private java.util.Random random = new java.util.Random();
     private int puzzleCount = 0; // Counter untuk nomor puzzle
+    
+    // Helper class untuk menyimpan perubahan sel (untuk Super Ultra Fast mode)
+    private static class CellUpdate {
+        int row, col, value;
+        java.awt.Color color;
+        CellUpdate(int r, int c, int v, java.awt.Color clr) {
+            row = r; col = c; value = v; color = clr;
+        }
+    }
     
     public SudokuSolverApp() {
         setTitle("Sudoku Solver - Algoritma Brute Force");
@@ -66,7 +76,13 @@ public class SudokuSolverApp extends JFrame {
             
             @Override
             public void onToggleAnimation(boolean skip) {
-                skipAnimation = skip;
+                // Dipanggil ketika user menekan tombol "Skip Animasi" (sekali klik)
+                // Saat ini proses solving mungkin sedang berjalan; flag ini akan
+                // dibaca di callback animasi untuk langsung menghentikan visual.
+                if (skip && !skipAnimation && isSolving) {
+                    skipAnimation = true;
+                    gui.addLog("\n⏩ Animasi di-skip oleh user. Melanjutkan dengan mode cepat...\n");
+                }
             }
         });
         
@@ -212,6 +228,10 @@ public class SudokuSolverApp extends JFrame {
         gui.addLog("=== MEMULAI ALGORITMA BRUTE FORCE ===\n");
         gui.addLog("Mencari solusi untuk puzzle Sudoku...\n\n");
         
+        // Reset flag skip & tampilan tombol sebelum proses baru
+        skipAnimation = false;
+        gui.resetSkipAnimation();
+        
         isSolving = true;
         
         currentWorker = new SwingWorker<Boolean, Void>() {
@@ -223,17 +243,25 @@ public class SudokuSolverApp extends JFrame {
                 }
                 
                 final SudokuSolver solver = new SudokuSolver(boardCopy);
+                activeSolver = solver;
                 long startTime = System.currentTimeMillis();
                 boolean solved;
                 
                 if (skipAnimation) {
                     gui.addLog("Mode CEPAT: Menyelesaikan tanpa animasi...\n\n");
                     solved = solver.solve();
+                    long endTimeSkip = System.currentTimeMillis();
+                    long executionTimeSkip = endTimeSkip - startTime;
                     gui.addLog("=== PROSES SELESAI ===\n");
                     gui.addLog("Total langkah: " + solver.getStepCount() + "\n");
+                    gui.addLog("Waktu eksekusi: " + executionTimeSkip + " ms\n");
                 } else {
                     // Animasi dengan log proses brute force yang detail
                     // Delay dibaca real-time agar bisa diubah saat proses berjalan
+                    
+                    // Buffer untuk Super Ultra Fast: kumpulkan perubahan setiap 10 update
+                    final java.util.List<CellUpdate> pendingUpdates = new java.util.ArrayList<>();
+                    final int[] updateCallCount = {0}; // Array untuk bisa diubah dari inner class
                     
                     solver.setCallback(new SudokuSolver.SolverCallback() {
                         @Override
@@ -246,15 +274,66 @@ public class SudokuSolverApp extends JFrame {
                         public void onBacktrack(int row, int col) {}
                         @Override
                         public void onLog(String message) {
-                            if (!isCancelled()) {
-                                // Tampilkan semua log proses brute force
+                            if (!isCancelled() && !skipAnimation) {
+                                // Jika mode throttle aktif (SUPER ULTRA), kurangi intensitas log
+                                if (gui.isThrottleVisualUpdates() && activeSolver != null) {
+                                    int sc = activeSolver.getStepCount();
+                                    if (sc % 10 != 0) {
+                                        return; // Log hanya setiap 10 langkah
+                                    }
+                                }
                                 SwingUtilities.invokeLater(() -> gui.addLog(message));
                             }
                         }
+                        
                         @Override
                         public void updateCell(int row, int col, int value, java.awt.Color color) {
                             if (!isCancelled()) {
-                                // Selalu update sel untuk visualisasi
+                                // Jika user menekan "Skip Animasi" di tengah jalan,
+                                // hentikan semua update visual agar solver bisa lanjut secepat mungkin.
+                                if (skipAnimation) {
+                                    return;
+                                }
+
+                                // Pada mode SUPER ULTRA (throttle visual):
+                                // Kumpulkan perubahan dalam buffer, lalu update semua sekaligus setiap 10 panggilan
+                                if (gui.isThrottleVisualUpdates()) {
+                                    updateCallCount[0]++;
+                                    // Simpan perubahan ke buffer (jangan skip value == 0, tetap simpan)
+                                    pendingUpdates.add(new CellUpdate(row, col, value, color));
+                                    
+                                    // Setiap 10 panggilan updateCell, update semua perubahan sekaligus
+                                    if (updateCallCount[0] % 10 == 0 && !pendingUpdates.isEmpty()) {
+                                        try {
+                                            SwingUtilities.invokeAndWait(() -> {
+                                                for (CellUpdate update : pendingUpdates) {
+                                                    gui.updateCellDirect(update.row, update.col, update.value, update.color);
+                                                }
+                                                pendingUpdates.clear();
+                                            });
+                                        } catch (Exception e) {
+                                            SwingUtilities.invokeLater(() -> {
+                                                for (CellUpdate update : pendingUpdates) {
+                                                    gui.updateCellDirect(update.row, update.col, update.value, update.color);
+                                                }
+                                                pendingUpdates.clear();
+                                            });
+                                        }
+                                    }
+                                    
+                                    // Sleep sesuai delay (1ms untuk Super Ultra)
+                                    int currentDelay = gui.getAnimationDelay();
+                                    if (currentDelay > 0) {
+                                        try {
+                                            Thread.sleep(currentDelay);
+                                        } catch (InterruptedException e) {
+                                            Thread.currentThread().interrupt();
+                                        }
+                                    }
+                                    return; // Skip update langsung, sudah di-handle di atas
+                                }
+                                
+                                // Mode normal: update langsung
                                 try {
                                     SwingUtilities.invokeAndWait(() -> {
                                         gui.updateCellDirect(row, col, value, color);
@@ -279,7 +358,7 @@ public class SudokuSolverApp extends JFrame {
                         @Override
                         public void sleep(int milliseconds) {
                             int currentDelay = gui.getAnimationDelay();
-                            if (currentDelay > 0 && !isCancelled()) {
+                            if (currentDelay > 0 && !isCancelled() && !skipAnimation) {
                                 try {
                                     Thread.sleep(Math.min(milliseconds, currentDelay));
                                 } catch (InterruptedException e) {
@@ -289,6 +368,25 @@ public class SudokuSolverApp extends JFrame {
                         }
                     });
                     solved = solver.solveWithAnimation();
+                    
+                    // Pastikan semua pending updates di Super Ultra Fast sudah di-render
+                    if (gui.isThrottleVisualUpdates() && !pendingUpdates.isEmpty()) {
+                        try {
+                            SwingUtilities.invokeAndWait(() -> {
+                                for (CellUpdate update : pendingUpdates) {
+                                    gui.updateCellDirect(update.row, update.col, update.value, update.color);
+                                }
+                                pendingUpdates.clear();
+                            });
+                        } catch (Exception e) {
+                            SwingUtilities.invokeLater(() -> {
+                                for (CellUpdate update : pendingUpdates) {
+                                    gui.updateCellDirect(update.row, update.col, update.value, update.color);
+                                }
+                                pendingUpdates.clear();
+                            });
+                        }
+                    }
                 }
                 
                 long endTime = System.currentTimeMillis();
@@ -322,6 +420,9 @@ public class SudokuSolverApp extends JFrame {
                             JOptionPane.WARNING_MESSAGE);
                     }
                     isSolving = false;
+                    activeSolver = null;
+                    // Reset tombol skip untuk run berikutnya
+                    gui.resetSkipAnimation();
                 });
                 
                 return solved;
@@ -371,7 +472,9 @@ public class SudokuSolverApp extends JFrame {
             }
         }
         isSolving = false;
+        skipAnimation = false;
         currentWorker = null;
+        gui.resetSkipAnimation();
     }
 }
 
