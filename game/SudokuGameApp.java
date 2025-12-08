@@ -50,6 +50,7 @@ public class SudokuGameApp extends JFrame {
     // Tingkat kesulitan bot
     private String botDifficulty = "Medium"; // Easy, Medium, Hard
     private Random random = new Random();
+    private SudokuGUI.SolverAlgorithm selectedAlgorithm = SudokuGUI.SolverAlgorithm.BRUTE_FORCE;
     
     // Komponen UI
     private JLabel scoreLabel;
@@ -63,7 +64,7 @@ public class SudokuGameApp extends JFrame {
     private JComboBox<String> difficultyCombo;
     
     public SudokuGameApp() {
-        setTitle("Bermain Sudoku - Game Mode");
+        setTitle("Bermain Sudoku - Multi Algorithm");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(true);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -108,6 +109,16 @@ public class SudokuGameApp extends JFrame {
             public void onSpeedChange(int newDelay) {}
             @Override
             public void onToggleAnimation(boolean skip) {}
+            
+            @Override
+            public void onAlgorithmChange(SudokuGUI.SolverAlgorithm algorithm) {
+                selectedAlgorithm = algorithm;
+                String algoName = algorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+                    ? "Brute Force" 
+                    : "Harris Hawks";
+                setTitle("Bermain Sudoku - Bot " + algoName);
+                updateBotAlgorithmDescription();
+            }
         });
         
         leftPanel.add(gui.createGridPanel(), BorderLayout.CENTER);
@@ -131,7 +142,7 @@ public class SudokuGameApp extends JFrame {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(new Color(33, 37, 41));
         
-        JLabel subtitleLabel = new JLabel("Lawan komputer menggunakan algoritma Brute Force", SwingConstants.CENTER);
+        JLabel subtitleLabel = new JLabel("Lawan komputer dengan pilihan algoritma: Brute Force atau Harris Hawks", SwingConstants.CENTER);
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitleLabel.setForeground(new Color(108, 117, 125));
         
@@ -328,6 +339,11 @@ public class SudokuGameApp extends JFrame {
         gui.getLogArea().setText("");
         gui.addLog("=== PERMAINAN DIMULAI ===\n");
         gui.addLog("Mode Turn-Based: Isi 1 sel per giliran\n");
+        
+        String algoName = selectedAlgorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+            ? "Brute Force (Backtracking)" 
+            : "Harris Hawks Optimization";
+        gui.addLog("🤖 Bot menggunakan: " + algoName + "\n");
         gui.addLog("Giliran: PLAYER\n\n");
     }
     
@@ -345,8 +361,8 @@ public class SudokuGameApp extends JFrame {
             System.arraycopy(puzzle[i], 0, fullSolution[i], 0, SudokuConstants.GRID_SIZE);
         }
         
-        // Solve untuk mendapatkan solusi lengkap
-        SudokuSolver solver = new SudokuSolver(fullSolution);
+        // Solve untuk mendapatkan solusi lengkap (gunakan Brute Force untuk generate solution cepat)
+        BruteForceSolver solver = new BruteForceSolver(fullSolution);
         boolean solved = solver.solve();
         
         if (!solved) {
@@ -355,7 +371,7 @@ public class SudokuGameApp extends JFrame {
             for (int i = 0; i < SudokuConstants.GRID_SIZE; i++) {
                 System.arraycopy(puzzle[i], 0, fullSolution[i], 0, SudokuConstants.GRID_SIZE);
             }
-            SudokuSolver solver2 = new SudokuSolver(fullSolution);
+            BruteForceSolver solver2 = new BruteForceSolver(fullSolution);
             solver2.solve();
         }
         
@@ -652,6 +668,13 @@ public class SudokuGameApp extends JFrame {
         difficultyLabel.setText("Bot: " + desc);
     }
     
+    private void updateBotAlgorithmDescription() {
+        String algoName = selectedAlgorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+            ? "Brute Force (Backtracking)" 
+            : "Harris Hawks Optimization";
+        gui.addLog("\n🤖 Bot akan menggunakan algoritma: " + algoName + "\n");
+    }
+    
     private int getBotValue(int row, int col) {
         int correctValue = solution[row][col];
         
@@ -724,12 +747,15 @@ public class SudokuGameApp extends JFrame {
                                     
                                     cells[finalRow][finalCol].setEditable(false);
                                     
+                                    String algoShort = selectedAlgorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+                                        ? "BF" : "HHO";
+                                    
                                     if (showProcess && !skipProcess) {
-                                        gui.addLog("✅ Bot (brute force) mengisi [" + finalRow + "," + finalCol + "] = " + finalBotValue + " (+1 poin)\n");
+                                        gui.addLog("✅ Bot (" + algoShort + ") mengisi [" + finalRow + "," + finalCol + "] = " + finalBotValue + " (+1 poin)\n");
                                         gui.updateCell(finalRow, finalCol, finalBotValue, new Color(255, 235, 59));
                                     } else {
                                         gui.updateCell(finalRow, finalCol, finalBotValue, new Color(255, 235, 59));
-                                        gui.addLog("✅ Bot (brute force) mengisi [" + finalRow + "," + finalCol + "] = " + finalBotValue + " (+1 poin)\n");
+                                        gui.addLog("✅ Bot (" + algoShort + ") mengisi [" + finalRow + "," + finalCol + "] = " + finalBotValue + " (+1 poin)\n");
                                     }
                                 } else {
                                     // Bot salah - highlight merah sebentar

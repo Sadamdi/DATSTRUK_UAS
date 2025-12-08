@@ -26,7 +26,8 @@ public class SudokuSolverApp extends JFrame {
     private boolean isSolving = false;
     private boolean skipAnimation = false;
     private SwingWorker<Boolean, Void> currentWorker; // Untuk stop proses
-    private SudokuSolver activeSolver; // Solver yang sedang berjalan (untuk referensi bila diperlukan)
+    private SudokuSolverAlgorithm activeSolver; // Solver yang sedang berjalan
+    private SudokuGUI.SolverAlgorithm selectedAlgorithm = SudokuGUI.SolverAlgorithm.BRUTE_FORCE;
     
     // Puzzle akan di-generate secara random
     private java.util.Random random = new java.util.Random();
@@ -42,7 +43,7 @@ public class SudokuSolverApp extends JFrame {
     }
     
     public SudokuSolverApp() {
-        setTitle("Sudoku Solver - Algoritma Brute Force");
+        setTitle("Sudoku Solver - Multi Algorithm");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setResizable(true);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -83,6 +84,15 @@ public class SudokuSolverApp extends JFrame {
                     skipAnimation = true;
                     gui.addLog("\n⏩ Animasi di-skip oleh user. Melanjutkan dengan mode cepat...\n");
                 }
+            }
+            
+            @Override
+            public void onAlgorithmChange(SudokuGUI.SolverAlgorithm algorithm) {
+                selectedAlgorithm = algorithm;
+                String algoName = algorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+                    ? "Brute Force (Backtracking)" 
+                    : "Harris Hawks Optimization";
+                setTitle("Sudoku Solver - " + algoName);
             }
         });
         
@@ -225,7 +235,12 @@ public class SudokuSolverApp extends JFrame {
         }
         
         gui.getLogArea().setText("");
-        gui.addLog("=== MEMULAI ALGORITMA BRUTE FORCE ===\n");
+        
+        String algoName = selectedAlgorithm == SudokuGUI.SolverAlgorithm.BRUTE_FORCE 
+            ? "BRUTE FORCE (BACKTRACKING)" 
+            : "HARRIS HAWKS OPTIMIZATION";
+        
+        gui.addLog("=== MEMULAI ALGORITMA " + algoName + " ===\n");
         gui.addLog("Mencari solusi untuk puzzle Sudoku...\n\n");
         
         // Reset flag skip & tampilan tombol sebelum proses baru
@@ -242,7 +257,13 @@ public class SudokuSolverApp extends JFrame {
                     System.arraycopy(board[i], 0, boardCopy[i], 0, SudokuConstants.GRID_SIZE);
                 }
                 
-                final SudokuSolver solver = new SudokuSolver(boardCopy);
+                // Pilih solver sesuai algoritma yang dipilih
+                final SudokuSolverAlgorithm solver;
+                if (selectedAlgorithm == SudokuGUI.SolverAlgorithm.HARRIS_HAWKS) {
+                    solver = new HarrisHawksSolver(boardCopy);
+                } else {
+                    solver = new BruteForceSolver(boardCopy);
+                }
                 activeSolver = solver;
                 long startTime = System.currentTimeMillis();
                 boolean solved;
@@ -256,14 +277,14 @@ public class SudokuSolverApp extends JFrame {
                     gui.addLog("Total langkah: " + solver.getStepCount() + "\n");
                     gui.addLog("Waktu eksekusi: " + executionTimeSkip + " ms\n");
                 } else {
-                    // Animasi dengan log proses brute force yang detail
+                    // Animasi dengan log proses yang detail
                     // Delay dibaca real-time agar bisa diubah saat proses berjalan
                     
                     // Buffer untuk Super Ultra Fast: kumpulkan perubahan setiap 10 update
                     final java.util.List<CellUpdate> pendingUpdates = new java.util.ArrayList<>();
                     final int[] updateCallCount = {0}; // Array untuk bisa diubah dari inner class
                     
-                    solver.setCallback(new SudokuSolver.SolverCallback() {
+                    solver.setCallback(new SudokuSolverAlgorithm.SolverCallback() {
                         @Override
                         public void onCellProcessing(int row, int col) {}
                         @Override

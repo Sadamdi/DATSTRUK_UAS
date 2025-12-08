@@ -1,10 +1,13 @@
 ## DATSTRUK_UAS – Project Sudoku (Struktur Data UAS)
 
 Repo ini isinya proyek UAS Struktur Data berupa aplikasi **Sudoku** berbasis **Java Swing**.  
-Di sini ada 2 mode utama:
+Di sini ada 2 mode utama dengan **2 algoritma** yang bisa dipilih:
 
-- **Sudoku Solver** – mode buat **menyelesaikan puzzle Sudoku** pakai algoritma **Brute Force** + animasi langkah-langkahnya.
-- **Sudoku Game** – mode **bermain Sudoku lawan bot** yang juga pakai algoritma **Brute Force**, tapi dibungkus kayak game turn-based (player vs komputer).
+- **Sudoku Solver** – mode buat **menyelesaikan puzzle Sudoku** pakai:
+  - **Brute Force (Backtracking)** – algoritma klasik dengan rekursi dan backtracking
+  - **Harris Hawks Optimization (HHO)** – algoritma metaheuristic terinspirasi dari perilaku berburu Harris Hawks
+  - Dengan animasi langkah-langkahnya dan opsi skip animasi
+- **Sudoku Game** – mode **bermain Sudoku lawan bot** dengan pilihan algoritma bot (Brute Force atau Harris Hawks), dibungkus kayak game turn-based (player vs komputer).
 
 ---
 
@@ -35,18 +38,51 @@ Di sini ada 2 mode utama:
 - **`SudokuGUI.java`**
   - Kelas yang ngatur tampilan:
     - Grid 9x9 (`JTextField`).
-    - Panel tombol (Solve, Reset, Load Example, dll).
+    - **Dropdown pilihan algoritma** (Brute Force atau Harris Hawks).
+    - Panel tombol (Solve, Reset, Load Example, Skip Animasi, dll).
     - Panel log (textarea) untuk menampilkan proses.
   - Dipakai oleh **dua mode**: `SudokuSolverApp` dan `SudokuGameApp`.
 
-- **`SudokuSolver.java`**
-  - Implementasi **algoritma brute force** buat nyelesaiin Sudoku.
-  - Punya:
-    - `solve()` – versi cepat tanpa animasi.
-    - `solveWithAnimation()` – versi yang manggil callback ke GUI (update sel, warna, log, dll).
-  - Ada **`SolverCallback`**:
-    - `onCellProcessing`, `onCellTesting`, `onCellSolved`, `onBacktrack`, `onLog`, `updateCell`, `sleep`, dll.
-    - Ini yang dipakai buat animasi per langkah di mode Solver.
+- **`SudokuSolverAlgorithm.java`** (Interface)
+  - Interface untuk semua algoritma solver Sudoku
+  - Mendefinisikan method yang harus diimplementasi:
+    - `solve()` – versi cepat tanpa animasi
+    - `solveWithAnimation()` – versi dengan callback ke GUI
+    - `setCallback()`, `cancel()`, `getStepCount()`, `getAlgorithmName()`
+  - Ada **`SolverCallback`** interface:
+    - `onCellProcessing`, `onCellTesting`, `onCellSolved`, `onBacktrack`, `onLog`, `updateCell`, `sleep`
+    - Dipakai untuk animasi per langkah
+
+- **`BruteForceSolver.java`** (implements SudokuSolverAlgorithm)
+  - Implementasi **algoritma Brute Force (Backtracking)**
+  - Cara kerja:
+    - Cari sel kosong pertama (kiri ke kanan, atas ke bawah)
+    - Coba angka 1-9, validasi setiap angka
+    - Jika valid, simpan dan rekursi ke sel berikutnya
+    - Jika tidak valid atau tidak ada solusi, backtrack ke sel sebelumnya
+  - Kompleksitas: O(9^n) dimana n = jumlah sel kosong
+
+- **`HarrisHawksSolver.java`** (implements SudokuSolverAlgorithm)
+  - Implementasi **algoritma Harris Hawks Optimization (HHO)**
+  - Metaheuristic algorithm terinspirasi dari perilaku berburu kooperatif Harris Hawks
+  - Cara kerja:
+    - **Inisialisasi**: Buat populasi hawks (kandidat solusi) secara random
+    - **Exploration**: Hawks mencari mangsa (solusi) secara random (diversifikasi)
+    - **Exploitation**: Hawks menyerang mangsa dengan 4 strategi:
+      - Soft Besiege: Mangsa masih berenergi, hawks mengelilingi
+      - Hard Besiege: Mangsa lemah, hawks menyerang langsung
+      - Soft Besiege + Rapid Dives: Serangan mendadak
+      - Hard Besiege + Rapid Dives: Serangan final intens
+    - **Fitness**: Jumlah konflik dalam board (baris, kolom, subgrid)
+    - **Konvergensi**: Iterasi berlanjut hingga fitness = 0 (solusi sempurna)
+  - Parameter:
+    - Population size: 10 hawks
+    - Max iterations: 1000
+  - Cocok untuk puzzle yang sulit diselesaikan dengan brute force
+
+- **`SudokuSolver.java`** (Legacy - deprecated)
+  - Class lama yang sekarang digantikan oleh BruteForceSolver
+  - Masih ada untuk backward compatibility
 
 - **`SudokuValidator.java`**
   - Cek apakah papan valid:
@@ -215,18 +251,26 @@ Di mode Game:
 
 Di `SudokuSolverApp` kamu bisa:
 
+- **Pilih Algoritma**
+  - Dropdown untuk memilih algoritma:
+    - **Brute Force (Backtracking)** – algoritma klasik deterministik
+    - **Harris Hawks Optimization** – algoritma metaheuristic stokastik
+
 - **Load Puzzle**
-  - Tombol untuk generate puzzle random.
-  - Banyak sel kosong diatur secara random (misalnya 40–55 sel kosong), lalu diklasifikasi jadi `Easy/Medium/Hard` berdasarkan jumlah kosongnya.
+  - Tombol untuk generate puzzle random
+  - Banyak sel kosong diatur secara random (misalnya 40–55 sel kosong)
+  - Diklasifikasi jadi `Easy/Medium/Hard` berdasarkan jumlah kosongnya
 
 - **Solve**
-  - Jalanin algoritma brute force.
+  - Jalankan algoritma yang dipilih
   - Ada dua mode:
-    - **Dengan animasi**: kelihatan sel diwarnai, angka berubah, backtrack, dsb.
-    - **Skip animasi**: langsung cari solusi tanpa visualisasi (lebih cepat).
+    - **Dengan animasi**: kelihatan sel diwarnai, angka berubah, proses algoritma
+      - Kecepatan bisa diatur: Lambat → Sedang → Cepat → Ultra Fast → Super Ultra Fast
+    - **Skip animasi**: tombol untuk langsung ke hasil tanpa visualisasi (jauh lebih cepat)
   - Di akhir, tampil:
-    - **Total langkah** yang dilakukan algoritma.
-    - **Waktu eksekusi (ms)**.
+    - **Total langkah** yang dilakukan algoritma
+    - **Waktu eksekusi (ms)**
+    - Untuk HHO: juga menampilkan fitness score
 
 - **Reset**
   - Kosongkan papan dan log.
@@ -251,15 +295,13 @@ Di `SudokuSolverApp` kamu bisa:
     - Ngambil semua `JTextField` (grid).
     - Nge-update warna dan isi sel selama animasi solving.
 
-- **`SudokuSolver.java`**
-  - Isinya algoritma brute force buat nyelesain Sudoku.
-  - `solve()` dipakai kalau mode cepat (tanpa animasi).
+- **`BruteForceSolver.java`** dan **`HarrisHawksSolver.java`**
+  - Implementasi algoritma solver yang dipilih user
+  - Keduanya implement interface `SudokuSolverAlgorithm`
+  - `solve()` dipakai kalau mode cepat (tanpa animasi)
   - `solveWithAnimation()` dipakai kalau mau ada visualisasi:
-    - Manggil callback setiap kali:
-      - Nyoba angka di sel tertentu.
-      - Angka diterima/ditolak.
-      - Terjadi backtrack.
-  - Menyimpan jumlah langkah dan bisa lapor balik ke `SudokuSolverApp`.
+    - Manggil callback setiap kali ada update (angka ditest, diterima, backtrack, iterasi HHO, dll)
+  - Menyimpan jumlah langkah dan bisa lapor balik ke `SudokuSolverApp`
 
 - **`SudokuValidator.java`**
   - Dipakai dua kali:
@@ -280,11 +322,12 @@ Di `SudokuSolverApp` kamu bisa:
 Di `SudokuGameApp`:
 
 - **Alur Permainan**
-  1. Klik **"Mulai"**:
-     - Program generate **solusi lengkap** dulu (pakai `SudokuSolver`).
-     - Lalu beberapa angka dihapus random untuk jadi puzzle.
-     - Sel awal (yang sudah terisi) di-lock (non-editable).
-  2. **Turn-based**:
+  1. **Pilih Algoritma Bot**: Dropdown untuk memilih Brute Force atau Harris Hawks
+  2. Klik **"Mulai"**:
+     - Program generate **solusi lengkap** dulu (pakai `BruteForceSolver` untuk generate cepat)
+     - Lalu beberapa angka dihapus random untuk jadi puzzle
+     - Sel awal (yang sudah terisi) di-lock (non-editable)
+  3. **Turn-based**:
      - **Player** isi 1 sel kosong (bebas pilih mana saja).
      - Klik **Submit**.
      - Kalau angkanya:

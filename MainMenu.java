@@ -70,7 +70,7 @@ public class MainMenu extends JFrame {
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 72));
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        subtitleLabel = new JLabel("Algoritma Brute Force (Backtracking)");
+        subtitleLabel = new JLabel("2 Algoritma: Brute Force & Harris Hawks Optimization");
         subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 20));
         subtitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
@@ -92,8 +92,8 @@ public class MainMenu extends JFrame {
         // Button 1: Sudoku Solver
         solverButton = createMenuButton(
             "🔍 SUDOKU SOLVER",
-            "Selesaikan puzzle Sudoku dengan algoritma Brute Force",
-            "• Generate puzzle random\n• Animasi step-by-step\n• Multiple kecepatan",
+            "Selesaikan puzzle Sudoku dengan 2 algoritma",
+            "• Brute Force (Backtracking)\n• Harris Hawks Optimization\n• Animasi step-by-step & Skip",
             ThemeManager.BTN_SOLVE
         );
         solverButton.addActionListener(e -> {
@@ -104,8 +104,8 @@ public class MainMenu extends JFrame {
         // Button 2: Bermain Sudoku
         gameButton = createMenuButton(
             "🎮 BERMAIN SUDOKU",
-            "Bermain melawan Bot menggunakan algoritma Brute Force",
-            "• Mode turn-based\n• 3 tingkat kesulitan Bot\n• Sistem skor",
+            "Bermain melawan Bot dengan pilihan algoritma",
+            "• Bot: Brute Force atau Harris Hawks\n• 3 tingkat kesulitan Bot\n• Mode turn-based + Sistem skor",
             ThemeManager.BTN_LOAD
         );
         gameButton.addActionListener(e -> {

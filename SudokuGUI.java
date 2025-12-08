@@ -24,6 +24,7 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
+import javax.swing.JComboBox;
 
 /**
  * Kelas untuk komponen GUI Sudoku Solver
@@ -31,11 +32,29 @@ import javax.swing.text.DocumentFilter;
  */
 public class SudokuGUI {
     
+    // Enum untuk algoritma solver
+    public enum SolverAlgorithm {
+        BRUTE_FORCE("Brute Force (Backtracking)"),
+        HARRIS_HAWKS("Harris Hawks Optimization");
+        
+        private final String displayName;
+        
+        SolverAlgorithm(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+    
     private JFrame frame;
     private JTextField[][] cells;
     private JTextArea logArea;
     private JButton speedButton;
     private JButton skipButton;
+    private JComboBox<SolverAlgorithm> algorithmCombo;
     private int animationDelay = SudokuConstants.ANIMATION_DELAY_MEDIUM;
     // Flag lokal hanya untuk mencegah double-klik saat skip dipicu
     private boolean skipAnimation = false;
@@ -59,6 +78,7 @@ public class SudokuGUI {
         void onReset();
         void onSpeedChange(int newDelay);
         void onToggleAnimation(boolean skip);
+        void onAlgorithmChange(SolverAlgorithm algorithm);
     }
     
     private GUIActionListener actionListener;
@@ -189,7 +209,26 @@ public class SudokuGUI {
         mainButtonsPanel.add(solveButton);
         mainButtonsPanel.add(resetButton);
         
-        // Panel untuk kontrol kecepatan (baris 2)
+        // Panel untuk pilihan algoritma (baris 2)
+        JPanel algorithmPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        algorithmPanel.setBackground(SudokuConstants.COLOR_BACKGROUND);
+        
+        JLabel algoLabel = new JLabel("Algoritma: ");
+        algoLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        
+        algorithmCombo = new JComboBox<>(SolverAlgorithm.values());
+        algorithmCombo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        algorithmCombo.setPreferredSize(new Dimension(220, 30));
+        algorithmCombo.addActionListener(e -> {
+            if (actionListener != null) {
+                actionListener.onAlgorithmChange((SolverAlgorithm) algorithmCombo.getSelectedItem());
+            }
+        });
+        
+        algorithmPanel.add(algoLabel);
+        algorithmPanel.add(algorithmCombo);
+        
+        // Panel untuk kontrol kecepatan (baris 3)
         JPanel speedPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         speedPanel.setBackground(SudokuConstants.COLOR_BACKGROUND);
         
@@ -248,6 +287,8 @@ public class SudokuGUI {
         speedPanel.add(skipButton);
         
         buttonPanel.add(mainButtonsPanel);
+        buttonPanel.add(Box.createVerticalStrut(5));
+        buttonPanel.add(algorithmPanel);
         buttonPanel.add(Box.createVerticalStrut(5));
         buttonPanel.add(speedPanel);
         
@@ -340,6 +381,19 @@ public class SudokuGUI {
     
     public boolean isThrottleVisualUpdates() {
         return throttleVisualUpdates;
+    }
+    
+    public SolverAlgorithm getSelectedAlgorithm() {
+        if (algorithmCombo != null) {
+            return (SolverAlgorithm) algorithmCombo.getSelectedItem();
+        }
+        return SolverAlgorithm.BRUTE_FORCE;
+    }
+    
+    public void setSelectedAlgorithm(SolverAlgorithm algorithm) {
+        if (algorithmCombo != null) {
+            algorithmCombo.setSelectedItem(algorithm);
+        }
     }
     
     /**

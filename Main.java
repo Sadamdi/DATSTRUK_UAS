@@ -72,6 +72,12 @@ public class Main extends JFrame {
             public void onToggleAnimation(boolean skip) {
                 skipAnimation = skip;
             }
+            
+            @Override
+            public void onAlgorithmChange(SudokuGUI.SolverAlgorithm algorithm) {
+                // Main.java tidak menggunakan pilihan algoritma (legacy file)
+                // Method ini ada untuk backward compatibility
+            }
         });
         
         // Setup layout - Side by side: Grid kiri, Log kanan

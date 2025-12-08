@@ -1,4 +1,3 @@
-
 /**
  * Kelas untuk algoritma Brute Force (Backtracking) Sudoku Solver
  * 
@@ -10,62 +9,51 @@
  * 5. Jika semua angka tidak valid, backtrack ke sel sebelumnya
  * 6. Ulangi sampai semua 81 sel terisi
  */
-public class SudokuSolver {
+public class BruteForceSolver implements SudokuSolverAlgorithm {
     
     private int[][] board;
     private SudokuValidator validator;
-    private SolverCallback callback;
+    private SudokuSolverAlgorithm.SolverCallback callback;
     private int stepCount = 0;
-    private volatile boolean cancelled = false; // Flag untuk cancel
-    private int lastLoggedStep = 0; // Untuk mengurangi log
+    private volatile boolean cancelled = false;
     
-    /**
-     * Interface untuk callback saat solving (untuk animasi dan log)
-     */
-    public interface SolverCallback {
-        void onCellProcessing(int row, int col);
-        void onCellTesting(int row, int col, int num, boolean isValid);
-        void onCellSolved(int row, int col, int num);
-        void onBacktrack(int row, int col);
-        void onLog(String message);
-        void updateCell(int row, int col, int value, java.awt.Color color);
-        void sleep(int milliseconds);
-    }
-    
-    public SudokuSolver(int[][] board) {
+    public BruteForceSolver(int[][] board) {
         this.board = board;
         this.validator = new SudokuValidator(board);
     }
     
-    /**
-     * Set callback untuk animasi dan log
-     */
+    @Override
     public void setCallback(SolverCallback callback) {
         this.callback = callback;
     }
     
-    /**
-     * Cancel proses solving
-     */
+    @Override
     public void cancel() {
         this.cancelled = true;
     }
     
-    /**
-     * Mulai solving dengan animasi
-     */
+    @Override
     public boolean solveWithAnimation() {
         stepCount = 0;
         cancelled = false;
         return solveSudokuWithAnimation(0, 0);
     }
     
-    /**
-     * Mulai solving tanpa animasi (lebih cepat)
-     */
+    @Override
     public boolean solve() {
+        stepCount = 0;
         cancelled = false;
         return solveSudoku(0, 0);
+    }
+    
+    @Override
+    public int getStepCount() {
+        return stepCount;
+    }
+    
+    @Override
+    public String getAlgorithmName() {
+        return "Brute Force (Backtracking)";
     }
     
     /**
@@ -73,13 +61,13 @@ public class SudokuSolver {
      */
     private boolean solveSudokuWithAnimation(int row, int col) {
         if (cancelled) {
-            return false; // Proses dibatalkan
+            return false;
         }
         
         if (row == SudokuConstants.GRID_SIZE) {
             return true; // Solusi ditemukan!
         }
-        //Cek Sel Kosong
+        
         int nextRow = (col == SudokuConstants.GRID_SIZE - 1) ? row + 1 : row;
         int nextCol = (col == SudokuConstants.GRID_SIZE - 1) ? 0 : col + 1;
         
@@ -95,10 +83,11 @@ public class SudokuSolver {
             callback.updateCell(row, col, 0, SudokuConstants.COLOR_CELL_PROCESSING);
             callback.onLog("📍 Step " + stepCount + ": Cek sel [" + row + "," + col + "]\n");
         }
-        //Proses Brute Force
+        
+        // Proses Brute Force
         for (int num = 1; num <= 9; num++) {
             if (cancelled) {
-                return false; // Proses dibatalkan
+                return false;
             }
             
             // Tampilkan angka yang sedang di-test
@@ -129,7 +118,7 @@ public class SudokuSolver {
                 
                 if (callback != null) {
                     callback.updateCell(row, col, 0, SudokuConstants.COLOR_CELL_BACKTRACK);
-                    callback.sleep(50); // Brief pause untuk show backtrack
+                    callback.sleep(50);
                     callback.updateCell(row, col, 0, SudokuConstants.COLOR_CELL_PROCESSING);
                 }
             } else {
@@ -153,23 +142,23 @@ public class SudokuSolver {
      */
     private boolean solveSudoku(int row, int col) {
         if (cancelled) {
-            return false; // Proses dibatalkan
+            return false;
         }
         
         if (row == SudokuConstants.GRID_SIZE) {
             return true;
         }
-        //Proses Cek Sel Kosong
+        
         int nextRow = (col == SudokuConstants.GRID_SIZE - 1) ? row + 1 : row;
         int nextCol = (col == SudokuConstants.GRID_SIZE - 1) ? 0 : col + 1;
         
         if (board[row][col] != 0) {
             return solveSudoku(nextRow, nextCol);
         }
-        //Proses Brute Force
+        
         for (int num = 1; num <= 9; num++) {
             if (cancelled) {
-                return false; // Proses dibatalkan
+                return false;
             }
             
             if (validator.isValidPlacement(row, col, num)) {
@@ -183,12 +172,4 @@ public class SudokuSolver {
         
         return false;
     }
-    
-    /**
-     * Get step count
-     */
-    public int getStepCount() {
-        return stepCount;
-    }
 }
-
