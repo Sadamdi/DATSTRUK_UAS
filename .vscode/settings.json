@@ -1,0 +1,7 @@
+{
+	"java.project.sourcePaths": ["."],
+	"java.project.outputPath": ".",
+	"java.configuration.updateBuildConfiguration": "automatic",
+	"java.compile.nullAnalysis.mode": "automatic",
+	"java.errors.incompleteClasspath.severity": "ignore"
+}

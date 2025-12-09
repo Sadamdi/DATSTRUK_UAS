@@ -1,3 +1,5 @@
+package solver;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -14,6 +16,16 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
+
+import algorithm.BruteForceSolver;
+import algorithm.HarrisHawksSolver;
+import algorithm.PuzzleGenerator;
+import algorithm.SudokuSolverAlgorithm;
+import algorithm.SudokuValidator;
+import gui.MainMenu;
+import gui.SudokuConstants;
+import gui.SudokuGUI;
+import gui.ThemeManager;
 
 /**
  * Sudoku Solver App - Mode untuk menyelesaikan puzzle

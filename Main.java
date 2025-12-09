@@ -10,6 +10,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.UIManager;
 
+import algorithm.SudokuSolver;
+import algorithm.SudokuValidator;
+import gui.MainMenu;
+import gui.SudokuConstants;
+import gui.SudokuGUI;
+
 /**
  * Main class - Entry point aplikasi Sudoku Solver
  * Menghubungkan semua komponen: GUI, Solver, Validator

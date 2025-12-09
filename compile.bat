@@ -1,25 +1,49 @@
 @echo off
 echo Kompilasi semua file Java...
-echo - Kompilasi interface dan solver algorithms...
-javac -encoding UTF-8 -cp . SudokuSolverAlgorithm.java BruteForceSolver.java HarrisHawksSolver.java SudokuValidator.java SudokuConstants.java
-echo - Kompilasi GUI dan utility classes...
-javac -encoding UTF-8 -cp . SudokuGUI.java ThemeManager.java PuzzleGenerator.java
-echo - Kompilasi aplikasi utama...
-javac -encoding UTF-8 -cp . solver/SudokuSolverApp.java game/SudokuGameApp.java MainMenu.java Main.java
+echo.
 
-if %ERRORLEVEL% EQU 0 (
-    echo Copy file .class ke root directory...
-    copy /Y solver\SudokuSolverApp*.class . >nul 2>&1
-    copy /Y game\SudokuGameApp*.class . >nul 2>&1
-    echo Kompilasi berhasil!
-) else (
-    echo Kompilasi gagal!
+echo Membersihkan file .class lama...
+if exist algorithm\*.class del /Q algorithm\*.class 2>nul
+if exist gui\*.class del /Q gui\*.class 2>nul
+if exist game\*.class del /Q game\*.class 2>nul
+if exist solver\*.class del /Q solver\*.class 2>nul
+if exist *.class del /Q *.class 2>nul
+echo.
+
+echo - Step 1: Kompilasi interface dan solver algorithms...
+javac -encoding UTF-8 -d . algorithm/SudokuSolverAlgorithm.java algorithm/BruteForceSolver.java algorithm/HarrisHawksSolver.java algorithm/SudokuValidator.java algorithm/SudokuSolver.java algorithm/PuzzleGenerator.java
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Kompilasi algorithm gagal!
+    pause
+    exit /b 1
 )
+echo   [OK] Algorithm compiled
 
+echo - Step 2: Kompilasi GUI dan utility classes...
+javac -encoding UTF-8 -d . gui/SudokuConstants.java gui/ThemeManager.java gui/SudokuGUI.java gui/MainMenu.java
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Kompilasi GUI gagal!
+    pause
+    exit /b 1
+)
+echo   [OK] GUI compiled
+
+echo - Step 3: Kompilasi aplikasi utama...
+javac -encoding UTF-8 -d . solver/SudokuSolverApp.java game/SudokuGameApp.java Main.java
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Kompilasi aplikasi gagal!
+    echo.
+    echo Cek apakah semua import sudah benar di file-file berikut:
+    echo   - game/SudokuGameApp.java
+    echo   - solver/SudokuSolverApp.java
+    echo   - Main.java
+    pause
+    exit /b 1
+)
+echo   [OK] Application compiled
+
+echo.
+echo ========================================
+echo Kompilasi berhasil! Semua file siap.
+echo ========================================
 pause
-
-
-
-
-
-

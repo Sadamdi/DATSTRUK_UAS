@@ -1,3 +1,5 @@
+package game;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -24,6 +26,14 @@ import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.border.TitledBorder;
+
+import algorithm.BruteForceSolver;
+import algorithm.PuzzleGenerator;
+import algorithm.SudokuValidator;
+import gui.MainMenu;
+import gui.SudokuConstants;
+import gui.SudokuGUI;
+import gui.ThemeManager;
 
 /**
  * Game Mode - Bermain Sudoku melawan komputer
