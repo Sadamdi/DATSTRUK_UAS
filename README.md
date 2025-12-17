@@ -25,9 +25,69 @@ Di sini ada 2 mode utama dengan **2 algoritma** yang bisa dipilih:
 
 ---
 
-### 2. Struktur Kelas Utama
+### 2. Struktur Proyek
 
-#### 2.1 Ringkasan kelas-kelas penting
+Proyek ini diorganisir dalam beberapa folder berdasarkan fungsinya:
+
+```
+UAS/
+├── Main.java                    # Entry point aplikasi
+├── README.md                    # Dokumentasi proyek
+├── LICENSE                      # Lisensi MIT
+├── compile.bat                 # Script untuk compile semua file Java
+├── run.bat                     # Script untuk menjalankan aplikasi
+│
+├── algorithm/                  # Folder algoritma solver dan utility
+│   ├── SudokuSolverAlgorithm.java    # Interface untuk semua algoritma solver
+│   ├── BruteForceSolver.java         # Implementasi algoritma Brute Force (Backtracking)
+│   ├── HarrisHawksSolver.java        # Implementasi algoritma Harris Hawks Optimization
+│   ├── SudokuSolver.java             # Legacy solver (deprecated)
+│   ├── SudokuValidator.java          # Validator untuk cek validitas papan Sudoku
+│   └── PuzzleGenerator.java          # Generator puzzle Sudoku random
+│
+├── gui/                        # Folder komponen GUI dan tema
+│   ├── MainMenu.java                 # Menu utama aplikasi
+│   ├── SudokuGUI.java               # Komponen GUI untuk grid dan kontrol
+│   ├── SudokuConstants.java         # Konstanta global (ukuran grid, warna, dll)
+│   └── ThemeManager.java            # Manager untuk tema dark/light mode
+│
+├── solver/                     # Folder mode Solver
+│   └── SudokuSolverApp.java         # Aplikasi mode penyelesaian puzzle
+│
+└── game/                       # Folder mode Game
+    └── SudokuGameApp.java           # Aplikasi mode permainan vs bot
+```
+
+#### Penjelasan Struktur Folder:
+
+- **`algorithm/`** – Berisi semua logika algoritma dan utility:
+  - Interface dan implementasi algoritma solver (Brute Force, Harris Hawks)
+  - Validator untuk memastikan aturan Sudoku terpenuhi
+  - Generator untuk membuat puzzle baru secara random
+
+- **`gui/`** – Berisi komponen antarmuka pengguna:
+  - Menu utama untuk navigasi antar mode
+  - Komponen GUI yang dipakai bersama (grid, tombol, log panel)
+  - Konstanta dan manager tema untuk styling aplikasi
+
+- **`solver/`** – Berisi aplikasi mode Solver:
+  - Window/frame khusus untuk mode penyelesaian puzzle
+  - Mengatur visualisasi algoritma dan animasi
+
+- **`game/`** – Berisi aplikasi mode Game:
+  - Window/frame khusus untuk mode permainan turn-based
+  - Mengatur logika permainan, skor, dan giliran player vs bot
+
+- **Root folder** – Berisi file utama:
+  - `Main.java` sebagai entry point aplikasi
+  - File batch untuk memudahkan compile dan run
+  - Dokumentasi dan lisensi
+
+---
+
+### 3. Struktur Kelas Utama
+
+#### 3.1 Ringkasan kelas-kelas penting
 
 - **`MainMenu.java`**
   - Tampilan menu awal.
@@ -106,7 +166,7 @@ Di sini ada 2 mode utama dengan **2 algoritma** yang bisa dipilih:
   - Ngatur **tema** (Dark/Light).
   - Dipakai di `SudokuSolverApp` dan `SudokuGameApp` lewat tombol toggle dark mode.
 
-#### 2.2 Tiga file utama
+#### 3.2 Tiga file utama
 
 - **`Main.java`**
   - Ini adalah **entry point** aplikasi (punya method `public static void main(String[] args)`).
@@ -194,7 +254,7 @@ Di sini ada 2 mode utama dengan **2 algoritma** yang bisa dipilih:
 
 ---
 
-### 3. Cara Menjalankan Proyek
+### 4. Cara Menjalankan Proyek
 
 Syarat:
 - Sudah install **Java JDK** (minimal 8 atau di atasnya).
@@ -218,7 +278,7 @@ Kalau pakai IDE (IntelliJ / NetBeans / Eclipse):
 
 ---
 
-### 4. Penjelasan Singkat Algoritma Brute Force
+### 5. Penjelasan Singkat Algoritma Brute Force
 
 Secara garis besar, algoritma brute force di `SudokuSolver` kerja seperti ini:
 
@@ -247,7 +307,7 @@ Di mode Game:
 
 ---
 
-### 5. Mode Sudoku Solver
+### 6. Mode Sudoku Solver
 
 Di `SudokuSolverApp` kamu bisa:
 
@@ -317,7 +377,7 @@ Di `SudokuSolverApp` kamu bisa:
 
 ---
 
-### 6. Mode Sudoku Game
+### 7. Mode Sudoku Game
 
 Di `SudokuGameApp`:
 
@@ -382,8 +442,8 @@ Di `SudokuGameApp`:
 
 ---
 
-### 7. Lisensi
+### 8. Lisensi
 
-Proyek ini pake lisensi **MIT** (lihat file `LICENSE` di repo ini).
+Proyek ini pake lisensi **MIT** Lihat file [LICENSE](LICENSE) untuk detail lengkap.
 
 
